@@ -677,3 +677,49 @@ tags=['datasets']
             'data': new_name
         }
         return Response(response)
+
+class ModelsViewSet(viewsets.ModelViewSet):
+    queryset = Models.objects.all()
+    serializer_class = ModelsSerializer
+    permission_classes = [IsOwner , IsAdmin]
+    def perform_create(self, serializer):
+        serializer.save(modelowner=self.request.user)
+    
+    id_user = openapi.Parameter('id_user',openapi.IN_QUERY,description='id cua giao vien',type=openapi.TYPE_NUMBER)
+    @swagger_auto_schema(method='get',manual_parameters=[id_user],responses={404: 'Not found', 200:'ok', 201:ModelsSerializer})
+    @action(methods=['GET'], detail=False, url_path='get-list-models')
+    def get_list_models(self, request):
+
+        """
+        lay ds model theo id giao vien
+        """
+        if request.user.id == None:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        id_user = request.query_params.get('id_user')
+
+        models = Models.objects.filter(modelcreator = id_user)
+        serializer = ModelsSerializer(models,many=True)
+
+        return Response(serializer.data)
+
+        
+class ModelsUploadView(views.APIView):
+    parser_classes = [FormParser,MultiPartParser]
+
+    def post(self, request):
+        file_obj = request.data['file']
+        new_name = uuid.uuid4()
+        
+        with zipfile.ZipFile(file_obj, mode='r', allowZip64=True) as file:
+            
+            directory_to_extract = f"models/{new_name}"
+            file.extractall(directory_to_extract)
+
+        response = {
+                    'status': 'success',
+                    'code': status.HTTP_201_CREATED,
+                    'message': 'Data uploaded successfully',
+                    'data': new_name
+                }
+        return Response(response)
