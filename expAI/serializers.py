@@ -139,3 +139,9 @@ class TrainningresultsSerializer(ModelSerializer):
     class Meta:
         model = Trainningresults
         fields = '__all__'
+
+class PredictSerializer(ModelSerializer):
+    class Meta:
+        model = Predict
+        fields = '__all__'
+        read_only_fields = ('accuracy','details','outputpath',)
