@@ -536,8 +536,8 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(method='get',manual_parameters=[id_paramsconfigs],responses={404: 'Not found', 200:'ok', 201:ResultsSerializer})
-    @action(methods=['GET'], detail=False, url_path='get-list-traning-results')
-    def get_list_traning_results(self, request):
+    @action(methods=['GET'], detail=False, url_path='get-all-traning-results')
+    def get_all_traning_results(self, request):
 
         """
         get trainning results
@@ -560,13 +560,13 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
 
 
 
-    pre_result_id = openapi.Parameter('pre_result_id',openapi.IN_QUERY,description='id của bản ghi trước đó, nếu gọi lần đầu thì để là 0',type=openapi.TYPE_NUMBER)
-    @swagger_auto_schema(method='get',manual_parameters=[id_paramsconfigs,pre_result_id],responses={404: 'Not found', 200:'ok', 201:ResultsSerializer})
-    @action(methods=['GET'], detail=False, url_path='get-traning-result')
-    def get_traning_result(self, request):
+    pre_result_index = openapi.Parameter('pre_result_index',openapi.IN_QUERY,description='index của bản ghi trước đó, nếu gọi lần đầu thì để là 0',type=openapi.TYPE_NUMBER)
+    @swagger_auto_schema(method='get',manual_parameters=[id_paramsconfigs,pre_result_index],responses={404: 'Not found', 200:'ok', 201:ResultsSerializer})
+    @action(methods=['GET'], detail=False, url_path='get-new-traning-result')
+    def get_new_traning_result(self, request):
 
         """
-        get trainning results
+        get new trainning results
         """
         if request.user.id == None:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
@@ -576,25 +576,20 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
 
         # id_exp = request.query_params.get('id_exp')
         id_paramsconfigs = request.query_params.get('id_paramsconfigs')
-        pre_result_id = request.query_params.get('pre_result_id')
+        pre_result_index = request.query_params.get('pre_result_index')
 
         # exp = Experiments.objects.filter(expid = id_exp)
         paramsconfigs = Paramsconfigs.objects.get(configid = id_paramsconfigs)
-        _results = Trainningresults.objects.filter(configid = paramsconfigs).order_by('trainresultid')
-        for position, _result in enumerate(_results):
-            if _result.trainresultid == int(pre_result_id)+1:
-                try:
-                    queryset = _result
-                    serializer = TrainningresultsSerializer(queryset,many = False)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                except:
-                    return JsonResponse({
-                                'message': 'Chưa có result mới!'
-                            },status=status.HTTP_102_PROCESSING)
+        _results = Trainningresults.objects.filter(configid = paramsconfigs,trainresultindex__gt = pre_result_index).order_by('trainresultindex')
 
-        return JsonResponse({
-                'message': 'Chưa có result mới!'
-            },status=status.HTTP_400_BAD_REQUEST)
+        if _results:
+            queryset = _results
+            serializer = TrainningresultsSerializer(queryset,many = True)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        else:
+            return JsonResponse({
+                        'message': 'Chưa có result mới!'
+                    },status=status.HTTP_102_PROCESSING)
 
 
     id_dataset = openapi.Parameter('id_dataset',openapi.IN_QUERY,description='id cua dataset test',type=openapi.TYPE_NUMBER)
@@ -730,5 +725,64 @@ class ModelsUploadView(views.APIView):
                     'code': status.HTTP_201_CREATED,
                     'message': 'Data uploaded successfully',
                     'data': new_name
+                }
+        return Response(response)
+
+class VideoUploadView(views.APIView):
+    
+    parser_classes = [FormParser,MultiPartParser]
+
+
+    @swagger_auto_schema(
+            operation_id='Upload video',
+            operation_description='Upload video',
+            operation_summary="Upload file video",
+            manual_parameters=[openapi.Parameter('file', openapi.IN_FORM, type=openapi.TYPE_FILE, description='video to be uploaded'),], tags=['experiment']
+        )
+    def post(self, request):
+        file_obj = request.FILES['file']
+        new_name = uuid.uuid4()
+        path = f"./static/predict_data/{new_name}/"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        with open(path + file_obj.name, 'wb+') as destination:
+            for chunk in file_obj.chunks():
+                destination.write(chunk)
+        response = {
+                    'status': 'success',
+                    'code': status.HTTP_201_CREATED,
+                    'message': 'Data uploaded successfully',
+                    'data': path
+                }
+        return Response(response)
+class ImagesUploadView(views.APIView):
+    
+    parser_classes = [FormParser,MultiPartParser]
+
+
+    @swagger_auto_schema(
+            operation_id='Upload images',
+            operation_description='Upload images',
+            operation_summary="Upload file images",
+            manual_parameters=[openapi.Parameter('file', openapi.IN_FORM, type=openapi.TYPE_FILE, description='images to be uploaded'),], tags=['experiment']
+        )
+    def post(self, request):
+        new_name = uuid.uuid4()
+        path = f"./static/predict_data/{new_name}/"
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+
+
+        for file_obj in request.FILES.getlist("files"):
+
+            with open(path + file_obj.name, 'wb+') as destination:
+                for chunk in file_obj.chunks():
+                    destination.write(chunk)
+        response = {
+                    'status': 'success',
+                    'code': status.HTTP_201_CREATED,
+                    'message': 'Data uploaded successfully',
+                    'data': path
                 }
         return Response(response)

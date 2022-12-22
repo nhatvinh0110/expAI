@@ -41,4 +41,7 @@ urlpatterns = [
     re_path(r'^change-password/$', views.ChangePasswordView.as_view(), name='change-password'),
     re_path(r'^change-infor/$', views.ChangeNameView.as_view(), name='change-name-2'),
     re_path(r'^upload-datasets-zip/$', views.DatasetsUploadView.as_view(), name='c'),
+    re_path(r'^upload-video/$', views.VideoUploadView.as_view(), name='c'),
+    re_path(r'^upload-images/$', views.ImagesUploadView.as_view(), name='c'),
+    
 ]

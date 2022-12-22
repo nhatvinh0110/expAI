@@ -182,6 +182,7 @@ class Trainningresults(models.Model):
     lossvalue = models.FloatField(db_column='lossvalue')
     accuracy = models.FloatField(db_column='accuracy')
     configid = models.ForeignKey(Paramsconfigs, models.CASCADE, db_column='configID', blank=True, null=True)  # Field name made lowercase.
+    is_last = models.BooleanField(db_column='is_last',null=True,blank=True,default=False)
 
 class Results(models.Model):
     resultid = models.AutoField(db_column='resultID', primary_key=True)  # Field name made lowercase.
