@@ -710,7 +710,6 @@ class ModelsViewSet(viewsets.ModelViewSet):
         else:
             permission_classes = [IsTeacher]
         return [permission() for permission in permission_classes]
-
         
 class ModelsUploadView(views.APIView):
     parser_classes = [FormParser,MultiPartParser]
