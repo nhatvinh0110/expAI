@@ -29,6 +29,7 @@ router.register(r'accounts', views.AccountsViewSet, basename="AVB")
 router.register(r'experiment',views.ExperimentsViewSet, basename="LK")
 router.register(r'datasets',views.DatasetsViewSet, basename="LK")
 router.register(r'models',views.ModelsViewSet, basename="LK")
+router.register(r'classes',views.ClassesViewSet, basename="LK")
 
 # The API URLs are now determined automatically by the router.
 urlpatterns = [

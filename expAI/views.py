@@ -103,7 +103,17 @@ class DatasetsViewSet(viewsets.ModelViewSet):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class ClassesViewSet(viewsets.ModelViewSet):
+    """
+    This viewset automatically provides `list`, `create`, `retrieve`,
+    `update` and `destroy` actions.
 
+    Additionally we also provide an extra `checkBody` action.
+    """
+    # permission_classes = (IsAdmin,)
+    queryset = Class.objects.all()
+    pagination_class = LargeResultsSetPagination
+    serializer_class = ClassesSerializer
 class AccountsViewSet(viewsets.ModelViewSet):
     """
     This viewset automatically provides `list`, `create`, `retrieve`,

@@ -73,7 +73,7 @@ class UserSerializer(serializers.ModelSerializer):
             'joined_at',
             'password',
             'is_staff',
-
+            'usrclass',
             'usrfullname',
             'usrdob',
             'usrfaculty'
@@ -138,6 +138,10 @@ class ParamsconfigsSerializer(ModelSerializer):
 class TrainningresultsSerializer(ModelSerializer):
     class Meta:
         model = Trainningresults
+        fields = '__all__'
+class ClassesSerializer(ModelSerializer):
+    class Meta:
+        model = Class
         fields = '__all__'
 
 class PredictSerializer(ModelSerializer):
