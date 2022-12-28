@@ -109,7 +109,7 @@ class Experiments(models.Model):
     expfilelog = models.CharField(db_column='expFileLog', max_length=100, blank=True, null=True)  # Field name made lowercase.
     expsoftwarelibid = models.ForeignKey('Softwarelibs', models.CASCADE, db_column='expSoftwareLibID', blank=True, null=True)  # Field name made lowercase.
     expaftertrainmodelpath = models.CharField(db_column='expAfterTrainModelPath', max_length=200, blank=True, null=True)  # Field name made lowercase.
-
+    expstatus = models.IntegerField(db_column='expStatus',default=1)
     class Meta:
         managed = True
         db_table = 'experiments'

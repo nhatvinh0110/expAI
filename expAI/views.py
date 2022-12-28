@@ -378,6 +378,7 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
             if serializer.is_valid():
                 myexp = serializer.save()
                 myexp.expcreatorid = request.user
+                myexp.expstatus = 1
                 myexp.save()
                 serializer = ExperimentsSerializer(myexp,many=False)
                 return Response(serializer.data,status=status.HTTP_201_CREATED)
@@ -504,8 +505,10 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
         if check_json_file(paramsconfigs_json):
 
             exp = Experiments.objects.get(expid = id_exp)
+            exp.expstatus = 2
             paramsconfigs = Paramsconfigs(jsonstringparams=paramsconfigs_json,trainningstatus=1,configexpid=exp)
             paramsconfigs.save()
+            exp.save()
             id_params = paramsconfigs.pk
 
             #--------------------
@@ -547,7 +550,8 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
         id_exp = request.query_params.get('id_exp')
         id_paramsconfigs = request.query_params.get('id_paramsconfigs')
 
-        exp = Experiments.objects.filter(expid = id_exp)
+        exp = Experiments.objects.get(expid = id_exp)
+        exp.expstatus = 2
         paramsconfigs = Paramsconfigs.objects.get(configid = id_paramsconfigs)
         paramsconfigs.trainningstatus = 0
         paramsconfigs.save()
@@ -637,6 +641,9 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
         id_paramsconfigs = request.query_params.get('id_paramsconfigs')
         _dataset = Datasets.objects.get(pk = id_dataset)
         _paramsconfigs = Paramsconfigs.objects.get(pk = id_paramsconfigs)
+        _exp = _paramsconfigs.configexpid
+        _exp.expstatus  = 3
+        _exp.save()
         _result = Results()
         _result.resultconfigid = _paramsconfigs
         _result.resulttestingdataset = _dataset
@@ -682,6 +689,9 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
         id_paramsconfigs = request.query_params.get('id_paramsconfigs')
 
         _para = Paramsconfigs.objects.get(pk = id_paramsconfigs)
+        _exp = _para.configexpid
+        _exp.expstatus  = 4
+        _exp.save()
         _predict = Predict()
         _predict.configid = _para
         _predict.inputpath = input_path1
