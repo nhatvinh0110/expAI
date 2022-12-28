@@ -708,7 +708,12 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
         id_predict = request.query_params.get('id_predict')
 
         _predict = Predict.objects.get(pk = id_predict)
-        list_result = os.listdir(_predict.outputpath)
+        list_result = []
+        if _predict.outputpath == None:
+            list_result = []
+        elif os.path.exists(_predict.outputpath):
+            list_result = os.listdir(_predict.outputpath)
+        
         serializer = PredictSerializer(_predict,many = False)
         if len(list_result) > 0:
             response = {
@@ -930,7 +935,7 @@ def testing_process(result_id):
     _result  = Results.objects.get(pk=result_id)
     _result.resultaccuracy = 0.98
     _result.resultdetail = '/somethings.txt'
-    time.sleep(20)
+    #time.sleep(20)
     _result.save()
     print("test finished")
 
@@ -943,41 +948,41 @@ def predict_process(pre_id):
 
     _pre  = Predict.objects.get(pk=pre_id)
 
-    result_path = str(_pre.inputpath)[:9] + 'predict_result' + str(_pre.inputpath)[21:]
-    if not os.path.exists(result_path):
-        os.makedirs(result_path)
+    # result_path = str(_pre.inputpath)[:9] + 'predict_result' + str(_pre.inputpath)[21:]
+    # if not os.path.exists(result_path):
+    #     os.makedirs(result_path)
     
-    if _pre.datatype == 'image':
-        for filename in os.listdir(str(_pre.inputpath)):
-            img = cv2.imread(os.path.join(str(_pre.inputpath),filename))
-            if img is not None:
-                img = cv2.flip(img,0)
-                cv2.imwrite(os.path.join(result_path,filename),img)
-        # _pre.outputpath = result_path
-        # _pre.save()
-    elif _pre.datatype == 'video':
-        # _pre.outputpath = result_path
-        # _pre.save()
-        return
-        # for filename in os.listdir(str(_pre.inputpath)):
-        #     video = cv2.VideoCapture(os.path.join(str(_pre.inputpath),filename))
-        #     if video.isOpened() == False:
-        #         _pre.details = "Error reading video file"
-        #         return
-        #     frame_width = int(video.get(3))
-        #     frame_height = int(video.get(4))
+    # if _pre.datatype == 'image':
+    #     for filename in os.listdir(str(_pre.inputpath)):
+    #         img = cv2.imread(os.path.join(str(_pre.inputpath),filename))
+    #         if img is not None:
+    #             img = cv2.flip(img,0)
+    #             cv2.imwrite(os.path.join(result_path,filename),img)
+    #     # _pre.outputpath = result_path
+    #     # _pre.save()
+    # elif _pre.datatype == 'video':
+    #     # _pre.outputpath = result_path
+    #     # _pre.save()
+    #     return
+    #     # for filename in os.listdir(str(_pre.inputpath)):
+    #     #     video = cv2.VideoCapture(os.path.join(str(_pre.inputpath),filename))
+    #     #     if video.isOpened() == False:
+    #     #         _pre.details = "Error reading video file"
+    #     #         return
+    #     #     frame_width = int(video.get(3))
+    #     #     frame_height = int(video.get(4))
             
-        #     size = (frame_width, frame_height)
-        #     result = cv2.VideoWriter(os.path.join(result_path,filename), 
-        #                  cv2.VideoWriter_fourcc(*'MJPG'),
-        #                  10, size)
+    #     #     size = (frame_width, frame_height)
+    #     #     result = cv2.VideoWriter(os.path.join(result_path,filename), 
+    #     #                  cv2.VideoWriter_fourcc(*'MJPG'),
+    #     #                  10, size)
             
 
 
 
     _pre.accuracy = 0.98
     _pre.details = '/somethings.txt'
-    _pre.outputpath =  result_path
+    _pre.outputpath =  _pre.inputpath
     #time.sleep(20)
     _pre.save()
     print("test finished")
