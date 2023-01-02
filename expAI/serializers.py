@@ -73,7 +73,7 @@ class UserSerializer(serializers.ModelSerializer):
             'joined_at',
             'password',
             'is_staff',
-
+            'usrclass',
             'usrfullname',
             'usrdob',
             'usrfaculty'
@@ -139,3 +139,13 @@ class TrainningresultsSerializer(ModelSerializer):
     class Meta:
         model = Trainningresults
         fields = '__all__'
+class ClassesSerializer(ModelSerializer):
+    class Meta:
+        model = Class
+        fields = '__all__'
+
+class PredictSerializer(ModelSerializer):
+    class Meta:
+        model = Predict
+        fields = '__all__'
+        read_only_fields = ('accuracy','details','outputpath',)

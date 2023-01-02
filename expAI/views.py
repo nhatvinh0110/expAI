@@ -103,7 +103,17 @@ class DatasetsViewSet(viewsets.ModelViewSet):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class ClassesViewSet(viewsets.ModelViewSet):
+    """
+    This viewset automatically provides `list`, `create`, `retrieve`,
+    `update` and `destroy` actions.
 
+    Additionally we also provide an extra `checkBody` action.
+    """
+    # permission_classes = (IsAdmin,)
+    queryset = Class.objects.all()
+    pagination_class = LargeResultsSetPagination
+    serializer_class = ClassesSerializer
 class AccountsViewSet(viewsets.ModelViewSet):
     """
     This viewset automatically provides `list`, `create`, `retrieve`,
@@ -368,6 +378,7 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
             if serializer.is_valid():
                 myexp = serializer.save()
                 myexp.expcreatorid = request.user
+                myexp.expstatus = 1
                 myexp.save()
                 serializer = ExperimentsSerializer(myexp,many=False)
                 return Response(serializer.data,status=status.HTTP_201_CREATED)
@@ -494,8 +505,21 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
         if check_json_file(paramsconfigs_json):
 
             exp = Experiments.objects.get(expid = id_exp)
+            exp.expstatus = 2
             paramsconfigs = Paramsconfigs(jsonstringparams=paramsconfigs_json,trainningstatus=1,configexpid=exp)
             paramsconfigs.save()
+            exp.save()
+            id_params = paramsconfigs.pk
+
+            #--------------------
+            # thread
+            import threading
+            t = threading.Thread(target=trainning_process, args=(id_params,), kwargs={})
+            t.setDaemon(True)
+            t.start()
+            #--------------------
+
+
             serializer = ParamsconfigsSerializer(paramsconfigs,many = False)
 
 
@@ -526,7 +550,8 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
         id_exp = request.query_params.get('id_exp')
         id_paramsconfigs = request.query_params.get('id_paramsconfigs')
 
-        exp = Experiments.objects.filter(expid = id_exp)
+        exp = Experiments.objects.get(expid = id_exp)
+        exp.expstatus = 2
         paramsconfigs = Paramsconfigs.objects.get(configid = id_paramsconfigs)
         paramsconfigs.trainningstatus = 0
         paramsconfigs.save()
@@ -536,8 +561,8 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(method='get',manual_parameters=[id_paramsconfigs],responses={404: 'Not found', 200:'ok', 201:ResultsSerializer})
-    @action(methods=['GET'], detail=False, url_path='get-list-traning-results')
-    def get_list_traning_results(self, request):
+    @action(methods=['GET'], detail=False, url_path='get-all-traning-results')
+    def get_all_traning_results(self, request):
 
         """
         get trainning results
@@ -560,13 +585,13 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
 
 
 
-    pre_result_id = openapi.Parameter('pre_result_id',openapi.IN_QUERY,description='id của bản ghi trước đó, nếu gọi lần đầu thì để là 0',type=openapi.TYPE_NUMBER)
-    @swagger_auto_schema(method='get',manual_parameters=[id_paramsconfigs,pre_result_id],responses={404: 'Not found', 200:'ok', 201:ResultsSerializer})
-    @action(methods=['GET'], detail=False, url_path='get-traning-result')
-    def get_traning_result(self, request):
+    pre_result_index = openapi.Parameter('pre_result_index',openapi.IN_QUERY,description='index của bản ghi trước đó, nếu gọi lần đầu thì để là 0',type=openapi.TYPE_NUMBER)
+    @swagger_auto_schema(method='get',manual_parameters=[id_paramsconfigs,pre_result_index],responses={404: 'Not found', 200:'ok', 201:ResultsSerializer})
+    @action(methods=['GET'], detail=False, url_path='get-new-traning-result')
+    def get_new_traning_result(self, request):
 
         """
-        get trainning results
+        get new trainning results
         """
         if request.user.id == None:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
@@ -576,25 +601,26 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
 
         # id_exp = request.query_params.get('id_exp')
         id_paramsconfigs = request.query_params.get('id_paramsconfigs')
-        pre_result_id = request.query_params.get('pre_result_id')
+        pre_result_index = request.query_params.get('pre_result_index')
 
         # exp = Experiments.objects.filter(expid = id_exp)
         paramsconfigs = Paramsconfigs.objects.get(configid = id_paramsconfigs)
-        _results = Trainningresults.objects.filter(configid = paramsconfigs).order_by('trainresultid')
-        for position, _result in enumerate(_results):
-            if _result.trainresultid == int(pre_result_id)+1:
-                try:
-                    queryset = _result
-                    serializer = TrainningresultsSerializer(queryset,many = False)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                except:
-                    return JsonResponse({
-                                'message': 'Chưa có result mới!'
-                            },status=status.HTTP_102_PROCESSING)
+        _results = Trainningresults.objects.filter(configid = paramsconfigs,trainresultindex__gt = pre_result_index).order_by('trainresultindex')
 
-        return JsonResponse({
-                'message': 'Chưa có result mới!'
-            },status=status.HTTP_400_BAD_REQUEST)
+        if _results:
+            queryset = _results
+            serializer = TrainningresultsSerializer(queryset,many = True)
+            response = {
+                    'status': 'success',
+                    'code': status.HTTP_201_CREATED,
+                    'message': 'Data uploaded successfully',
+                    'data': {'result':serializer.data,'status':paramsconfigs.trainningstatus}
+                }
+            return Response(response,status=status.HTTP_200_OK)
+        else:
+            return JsonResponse({
+                        'message': 'Chưa có result mới!'
+                    },status=status.HTTP_102_PROCESSING)
 
 
     id_dataset = openapi.Parameter('id_dataset',openapi.IN_QUERY,description='id cua dataset test',type=openapi.TYPE_NUMBER)
@@ -615,10 +641,19 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
         id_paramsconfigs = request.query_params.get('id_paramsconfigs')
         _dataset = Datasets.objects.get(pk = id_dataset)
         _paramsconfigs = Paramsconfigs.objects.get(pk = id_paramsconfigs)
+        _exp = _paramsconfigs.configexpid
+        _exp.expstatus  = 3
+        _exp.save()
         _result = Results()
         _result.resultconfigid = _paramsconfigs
         _result.resulttestingdataset = _dataset
         _result.save()
+        #----------------------------------- thread
+        import threading
+        t = threading.Thread(target=testing_process, args=(_result.pk,), kwargs={})
+        t.setDaemon(True)
+        t.start()
+        #-------------------------------------------------------------------
         serializer = ResultsSerializer(_result,many = False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -639,7 +674,82 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
             serializer = ResultsSerializer(_result,many = False)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+    input_path1 = openapi.Parameter('input_path1',openapi.IN_QUERY,description='đường dẫn tới folder input',type=openapi.TYPE_STRING)
+    input_path2 = openapi.Parameter('input_path2',openapi.IN_QUERY,description='đường dẫn tới folder ảnh người trong face Recognition',type=openapi.TYPE_STRING)
+    data_type = openapi.Parameter('data_type',openapi.IN_QUERY,description='image/video',type=openapi.TYPE_STRING)
+    @swagger_auto_schema(manual_parameters=[id_paramsconfigs,input_path1,input_path2,data_type],responses={404: 'Not found', 200:'ok',201:PredictSerializer})
+    @action(methods=['GET'], detail=False, url_path='predict')
+    def predict(self,request):
+        if request.user.id == None:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        input_path1 = request.query_params.get('input_path1')
+        input_path2 = request.query_params.get('input_path2')
+        data_type = request.query_params.get('data_type')
+        id_paramsconfigs = request.query_params.get('id_paramsconfigs')
+
+        _para = Paramsconfigs.objects.get(pk = id_paramsconfigs)
+        _exp = _para.configexpid
+        _exp.expstatus  = 4
+        _exp.save()
+        _predict = Predict()
+        _predict.configid = _para
+        _predict.inputpath = input_path1
+        if input_path2:
+            _predict.inputpath2 = input_path2
+        _predict.datatype = data_type
+        _predict.save()
+
+        import threading
+        t = threading.Thread(target=predict_process, args=(_predict.pk,), kwargs={})
+        t.setDaemon(True)
+        t.start()
+
+        serializer = PredictSerializer(_predict,many = False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    id_predict = openapi.Parameter('id_predict',openapi.IN_QUERY,description='id predict',type=openapi.TYPE_NUMBER)
+    @swagger_auto_schema(manual_parameters=[id_predict],responses={404: 'Not found', 200:'ok',201:PredictSerializer})
+    @action(methods=['GET'], detail=False, url_path='get_predict_result')
+    def get_predict_result(self,request):
+        if request.user.id == None:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        id_predict = request.query_params.get('id_predict')
+
+        _predict = Predict.objects.get(pk = id_predict)
+        list_result = []
+        if _predict.outputpath == None:
+            list_result = []
+        elif os.path.exists(_predict.outputpath):
+            list_result = os.listdir(_predict.outputpath)
         
+        serializer = PredictSerializer(_predict,many = False)
+        if len(list_result) > 0:
+            response = {
+                    'status': 'success',
+                    'code': status.HTTP_201_CREATED,
+                    'message': 'Predict successfully',
+                    'data': {'result':list_result,'data':serializer.data}
+                }
+        else:
+            response = {
+                    'status': 'success',
+                    'code': status.HTTP_201_CREATED,
+                    'message': 'Output is Null',
+                    'data': {'result':list_result,'data':serializer.data}
+                }
+
+        return Response(response, status=status.HTTP_200_OK)
+
+
+
+
+        
+        
+        
+
+
 
     
 
@@ -702,14 +812,7 @@ class ModelsViewSet(viewsets.ModelViewSet):
         serializer = ModelsSerializer(models,many=True)
 
         return Response(serializer.data)
-    
-    def get_permissions(self):
-    
-        if self.action == 'get_list_models':
-            permission_classes = [IsStudent|IsTeacher|IsAdmin]
-        else:
-            permission_classes = [IsTeacher]
-        return [permission() for permission in permission_classes]
+
         
 class ModelsUploadView(views.APIView):
     parser_classes = [FormParser,MultiPartParser]
@@ -731,3 +834,158 @@ class ModelsUploadView(views.APIView):
                     'data': new_name
                 }
         return Response(response)
+
+class FileUploadView(views.APIView):
+    
+    parser_classes = [FormParser,MultiPartParser]
+
+
+    @swagger_auto_schema(
+            operation_id='Upload file',
+            operation_description='Upload file',
+            operation_summary="Upload a file",
+            manual_parameters=[openapi.Parameter('file', openapi.IN_FORM, type=openapi.TYPE_FILE, description='file to be uploaded'),], tags=['experiment']
+        )
+    def post(self, request):
+        file_obj = request.FILES['file']
+        new_name = uuid.uuid4()
+        path = f"./static/predict_data/{new_name}/"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        with open(path + file_obj.name, 'wb+') as destination:
+            for chunk in file_obj.chunks():
+                destination.write(chunk)
+        response = {
+                    'status': 'success',
+                    'code': status.HTTP_201_CREATED,
+                    'message': 'Data uploaded successfully',
+                    'data': path
+                }
+        return Response(response)
+class FilesUploadView(views.APIView):
+    
+    parser_classes = [FormParser,MultiPartParser]
+
+
+    @swagger_auto_schema(
+            operation_id='Upload files',
+            operation_description='Upload files',
+            operation_summary="Upload file files",
+            manual_parameters=[openapi.Parameter('file', openapi.IN_FORM, type=openapi.TYPE_FILE, description='files to be uploaded'),], tags=['experiment']
+        )
+    def post(self, request):
+        new_name = uuid.uuid4()
+        path = f"./static/predict_data/{new_name}/"
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+
+
+        for file_obj in request.FILES.getlist("files"):
+
+            with open(path + file_obj.name, 'wb+') as destination:
+                for chunk in file_obj.chunks():
+                    destination.write(chunk)
+        response = {
+                    'status': 'success',
+                    'code': status.HTTP_201_CREATED,
+                    'message': 'Data uploaded successfully',
+                    'data': path
+                }
+        return Response(response)
+
+
+#fuctions for thread
+
+def trainning_process(para_id):
+    import time
+    print("train started")
+    print(para_id)
+    for i in range(1,10):
+        time.sleep(10)
+        _para = Paramsconfigs.objects.get(pk=para_id)
+        if _para.trainningstatus == 0:
+            _new_result = Trainningresults()
+            _new_result.configid = _para
+            _new_result.accuracy = i
+            _new_result.lossvalue = 100-1
+            _new_result.trainresultindex = i
+            _new_result.is_last = True
+            _new_result.save()
+            return
+            break
+
+        else:
+            _new_result = Trainningresults()
+            _new_result.configid = _para
+            _new_result.accuracy = i
+            _new_result.lossvalue = 100-1
+            _new_result.trainresultindex = i
+            _new_result.is_last = False
+            _new_result.save()
+    _para = Paramsconfigs.objects.get(pk=id)
+    _para.trainningstatus = 0
+    _para.save()
+    
+    print("train finished")
+
+    return
+def testing_process(result_id):
+    import time
+    print("test started")
+    print(result_id)
+    _result  = Results.objects.get(pk=result_id)
+    _result.resultaccuracy = 0.98
+    _result.resultdetail = '/somethings.txt'
+    #time.sleep(20)
+    _result.save()
+    print("test finished")
+
+def predict_process(pre_id):
+    import time
+    import cv2
+    print("test started")
+    print(pre_id)
+    
+
+    _pre  = Predict.objects.get(pk=pre_id)
+
+    # result_path = str(_pre.inputpath)[:9] + 'predict_result' + str(_pre.inputpath)[21:]
+    # if not os.path.exists(result_path):
+    #     os.makedirs(result_path)
+    
+    # if _pre.datatype == 'image':
+    #     for filename in os.listdir(str(_pre.inputpath)):
+    #         img = cv2.imread(os.path.join(str(_pre.inputpath),filename))
+    #         if img is not None:
+    #             img = cv2.flip(img,0)
+    #             cv2.imwrite(os.path.join(result_path,filename),img)
+    #     # _pre.outputpath = result_path
+    #     # _pre.save()
+    # elif _pre.datatype == 'video':
+    #     # _pre.outputpath = result_path
+    #     # _pre.save()
+    #     return
+    #     # for filename in os.listdir(str(_pre.inputpath)):
+    #     #     video = cv2.VideoCapture(os.path.join(str(_pre.inputpath),filename))
+    #     #     if video.isOpened() == False:
+    #     #         _pre.details = "Error reading video file"
+    #     #         return
+    #     #     frame_width = int(video.get(3))
+    #     #     frame_height = int(video.get(4))
+            
+    #     #     size = (frame_width, frame_height)
+    #     #     result = cv2.VideoWriter(os.path.join(result_path,filename), 
+    #     #                  cv2.VideoWriter_fourcc(*'MJPG'),
+    #     #                  10, size)
+            
+
+
+
+    _pre.accuracy = 0.98
+    _pre.details = '/somethings.txt'
+    _pre.outputpath =  _pre.inputpath
+    #time.sleep(20)
+    _pre.save()
+    print("test finished")
+

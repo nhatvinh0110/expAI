@@ -109,7 +109,7 @@ class Experiments(models.Model):
     expfilelog = models.CharField(db_column='expFileLog', max_length=100, blank=True, null=True)  # Field name made lowercase.
     expsoftwarelibid = models.ForeignKey('Softwarelibs', models.CASCADE, db_column='expSoftwareLibID', blank=True, null=True)  # Field name made lowercase.
     expaftertrainmodelpath = models.CharField(db_column='expAfterTrainModelPath', max_length=200, blank=True, null=True)  # Field name made lowercase.
-
+    expstatus = models.IntegerField(db_column='expStatus',default=1)
     class Meta:
         managed = True
         db_table = 'experiments'
@@ -171,6 +171,9 @@ class Paramsconfigs(models.Model):
     configexpid = models.ForeignKey(Experiments, models.CASCADE, db_column='configExpID', blank=True, null=True)  # Field name made lowercase.
     configresid = models.CharField(db_column='configResID', max_length=20, blank=True, null=True)  # Field name made lowercase.
     configevaluateid = models.ForeignKey(Evaluations, models.CASCADE, db_column='configEvaluateID', blank=True, null=True)  # Field name made lowercase.
+    configaftertrainmodelpath = models.CharField(db_column='expAfterTrainModelPath', max_length=200, blank=True, null=True)  # Field name made lowercase.
+    configfilelog = models.CharField(db_column='expFileLog', max_length=100, blank=True, null=True)
+
 
     class Meta:
         managed = True
@@ -182,6 +185,7 @@ class Trainningresults(models.Model):
     lossvalue = models.FloatField(db_column='lossvalue')
     accuracy = models.FloatField(db_column='accuracy')
     configid = models.ForeignKey(Paramsconfigs, models.CASCADE, db_column='configID', blank=True, null=True)  # Field name made lowercase.
+    is_last = models.BooleanField(db_column='is_last',null=True,blank=True,default=False)
 
 class Results(models.Model):
     resultid = models.AutoField(db_column='resultID', primary_key=True)  # Field name made lowercase.
@@ -193,6 +197,24 @@ class Results(models.Model):
     class Meta:
         managed = True
         db_table = 'results'
+
+class Predict(models.Model):
+    predictid = models.AutoField(db_column='predictId',primary_key=True)
+    inputpath = models.CharField(db_column='inputPath',max_length=800,null=True,blank=True)
+    inputpath2 = models.CharField(db_column='inputPath2',max_length=800,null=True,blank=True)
+    outputpath = models.CharField(db_column='outputPath',max_length=800,null=True,blank=True)
+    datatype = models.CharField(db_column='datatype',max_length=200,null=True,blank=True)
+
+    accuracy = models.FloatField(db_column='accuracy',null=True,blank=True)
+    details = models.CharField(db_column='details',max_length=800,null=True,blank=True)
+
+    configid = models.ForeignKey(Paramsconfigs, models.CASCADE, db_column='resultConfigID', blank=True, null=True)  # Field name made lowercase.
+    class Meta:
+        managed = True
+        db_table = 'predict'
+        
+
+
 
 
 class Roles(models.Model):

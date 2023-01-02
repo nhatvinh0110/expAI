@@ -29,6 +29,7 @@ router.register(r'accounts', views.AccountsViewSet, basename="AVB")
 router.register(r'experiment',views.ExperimentsViewSet, basename="LK")
 router.register(r'datasets',views.DatasetsViewSet, basename="LK")
 router.register(r'models',views.ModelsViewSet, basename="LK")
+router.register(r'classes',views.ClassesViewSet, basename="LK")
 
 # The API URLs are now determined automatically by the router.
 urlpatterns = [
@@ -41,4 +42,7 @@ urlpatterns = [
     re_path(r'^change-password/$', views.ChangePasswordView.as_view(), name='change-password'),
     re_path(r'^change-infor/$', views.ChangeNameView.as_view(), name='change-name-2'),
     re_path(r'^upload-datasets-zip/$', views.DatasetsUploadView.as_view(), name='c'),
+    re_path(r'^upload-file/$', views.FileUploadView.as_view(), name='c'),
+    re_path(r'^upload-files/$', views.FilesUploadView.as_view(), name='c'),
+    
 ]
