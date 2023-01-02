@@ -791,7 +791,7 @@ tags=['datasets']
 class ModelsViewSet(viewsets.ModelViewSet):
     queryset = Models.objects.all()
     serializer_class = ModelsSerializer
-    permission_classes = [IsOwner , IsAdmin]
+    permission_classes = [IsOwner | IsAdmin]
     def perform_create(self, serializer):
         serializer.save(modelowner=self.request.user)
     
@@ -814,7 +814,7 @@ class ModelsViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def get_permissions(self):
-        if self.action == 'get_list_model':
+        if self.action == 'get_list_model' or self.action == 'list':
             permission_classes = [IsStudent|IsTeacher|IsAdmin]
         else:
             permission_classes = [IsTeacher]
