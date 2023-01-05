@@ -757,6 +757,20 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
 
         return Response(response, status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(manual_parameters=[id_exp],responses={404: 'Not found', 200:'ok',201:ResultsSerializer})
+    @action(methods=['GET'], detail=False, url_path='get_list_test_results')
+    def get_list_test_results(self,request):
+        if request.user.id == None:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        id_exp = request.query_params.get('id_exp')
+        _paramsconfigs = Paramsconfigs.objects.filter(configexpid= id_exp)
+        _result = Results.objects.filter(resultconfigid__in = _paramsconfigs)
+        
+        serializer = ResultsSerializer(_result,many = False)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 
