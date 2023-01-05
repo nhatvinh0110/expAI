@@ -767,7 +767,7 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
         _paramsconfigs = Paramsconfigs.objects.filter(configexpid= id_exp)
         _result = Results.objects.filter(resultconfigid__in = _paramsconfigs)
         
-        serializer = ResultsSerializer(_result,many = False)
+        serializer = ResultsSerializer(_result,many = True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -950,7 +950,6 @@ def trainning_process(para_id):
             _new_result.is_last = True
             _new_result.save()
             return
-            break
 
         else:
             _new_result = Trainningresults()
