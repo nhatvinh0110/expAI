@@ -531,6 +531,21 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
             #return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
+    @swagger_auto_schema(manual_parameters=[id_exp],responses={404: 'Not found', 200:'ok'})
+    @action(methods=['GET'], detail=False, url_path='list-paramsconfigs')
+    def list_paramsconfigs(self, request):
+        if request.user.id == None:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        id_exp = request.query_params.get('id_exp')
+
+        paramsconfigs = Paramsconfigs.objects.filter(configexpid = id_exp)
+
+
+        serializer = ParamsconfigsSerializer(paramsconfigs,many = True)
+
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 
