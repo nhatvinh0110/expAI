@@ -821,6 +821,7 @@ class ModelsViewSet(viewsets.ModelViewSet):
     queryset = Models.objects.all()
     serializer_class = ModelsSerializer
     permission_classes = [IsOwner | IsAdmin]
+    authentication_classes = (CsrfExemptSessionAuthentication,)
     def perform_create(self, serializer):
         serializer.save(modelowner=self.request.user)
     
@@ -854,6 +855,7 @@ class ModelsViewSet(viewsets.ModelViewSet):
 class ModelsUploadView(views.APIView):
     parser_classes = [FormParser,MultiPartParser]
     permission_classes = [IsTeacher]
+    authentication_classes = (CsrfExemptSessionAuthentication,)
 
     def post(self, request):
         file_obj = request.data['file']
@@ -875,6 +877,7 @@ class ModelsUploadView(views.APIView):
 class FileUploadView(views.APIView):
     
     parser_classes = [FormParser,MultiPartParser]
+    authentication_classes = (CsrfExemptSessionAuthentication,)
 
 
     @swagger_auto_schema(
@@ -902,6 +905,7 @@ class FileUploadView(views.APIView):
 class FilesUploadView(views.APIView):
     
     parser_classes = [FormParser,MultiPartParser]
+    authentication_classes = (CsrfExemptSessionAuthentication,)
 
 
     @swagger_auto_schema(
