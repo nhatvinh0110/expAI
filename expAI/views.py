@@ -499,7 +499,7 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
 
         id_exp = request.query_params.get('id_exp')
         paramsconfigs_json = request.query_params.get('paramsconfigs_json')
-        print(paramsconfigs_json)
+        #print(paramsconfigs_json)
 
 
         if check_json_file(paramsconfigs_json):
@@ -767,9 +767,13 @@ class ExperimentsViewSet(viewsets.ModelViewSet):
         _paramsconfigs = Paramsconfigs.objects.filter(configexpid= id_exp)
         _result = Results.objects.filter(resultconfigid__in = _paramsconfigs)
         
-        serializer = ResultsSerializer(_result,many = True)
+        list_serializer = ResultsSerializer(_result,many = True)
+        for item in list_serializer.data : 
+            item['resultconfig'] = ParamsconfigsSerializer(Paramsconfigs.objects.get(pk = item['resultconfigid']),many = False).data
+            item['resultdataset'] = DatasetsSerializer(Datasets.objects.get(pk = item['resulttestingdataset']),many = False).data
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(list_serializer.data, status=status.HTTP_200_OK)
 
 
 

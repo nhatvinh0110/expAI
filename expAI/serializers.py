@@ -118,8 +118,13 @@ class DatasetsSerializer(ModelSerializer):
         model = Datasets
         fields = '__all__'
         read_only_fields = ('datasetowner',"datasetcreatedtime",)
-
+class ParamsconfigsSerializer(ModelSerializer):
+    class Meta:
+        model = Paramsconfigs
+        fields = '__all__'
 class ResultsSerializer(ModelSerializer):
+    resultconfig = ParamsconfigsSerializer( read_only=True, many=False)
+    resultdataset = DatasetsSerializer( read_only=True, many=False)
     class Meta:
         model = Results
         fields = '__all__'
@@ -129,10 +134,7 @@ class ModelsSerializer(ModelSerializer):
         model = Models
         fields = '__all__'
 
-class ParamsconfigsSerializer(ModelSerializer):
-    class Meta:
-        model = Paramsconfigs
-        fields = '__all__'
+
 
 
 class TrainningresultsSerializer(ModelSerializer):
