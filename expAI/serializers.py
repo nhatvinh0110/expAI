@@ -151,3 +151,9 @@ class PredictSerializer(ModelSerializer):
         model = Predict
         fields = '__all__'
         read_only_fields = ('accuracy','details','outputpath',)
+        
+class Model_trainedSerializer(ModelSerializer):
+    class Meta:
+        model = Model_trained
+        fields = '__all__'
+        

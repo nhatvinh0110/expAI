@@ -105,7 +105,7 @@ class Experiments(models.Model):
     expcreatorid = models.ForeignKey('User', models.CASCADE, db_column='expCreatorID', blank=True, null=True)  # Field name made lowercase.
     expcreatedtime = models.DateTimeField(db_column='expCreatedTime', blank=True, null=True)  # Field name made lowercase.
     expmodelid = models.ForeignKey('Models', models.SET_NULL, db_column='expModelID', blank=True, null=True)  # Field name made lowercase.
-    expdatasetid = models.ForeignKey(Datasets, models.SET_NULL, db_column='expDatasetID', blank=True, null=True)  # Field name made lowercase.
+    expdatasetid = models.ForeignKey('Datasets', models.SET_NULL, db_column='expDatasetID', blank=True, null=True)  # Field name made lowercase.
     expfilelog = models.CharField(db_column='expFileLog', max_length=100, blank=True, null=True)  # Field name made lowercase.
     expsoftwarelibid = models.ForeignKey('Softwarelibs', models.CASCADE, db_column='expSoftwareLibID', blank=True, null=True)  # Field name made lowercase.
     expaftertrainmodelpath = models.CharField(db_column='expAfterTrainModelPath', max_length=200, blank=True, null=True)  # Field name made lowercase.
@@ -252,3 +252,13 @@ class TypePermission(models.Model):
         managed = True
         db_table="TypePermission"
 
+class Model_trained(models.Model):
+    model_trainedid = models.AutoField(db_column='model_trainedID', primary_key=True)  # Field name made lowercase.
+    modelid = models.ForeignKey('Models', models.SET_NULL, db_column='modelID', blank=True, null=True)  # Field name made lowercase.
+    model_trainedcreatorid = models.ForeignKey('User', models.CASCADE, db_column='model_trainedCreatorID', blank=True, null=True)  # Field name made lowercase.
+    model_trainedconfigid = models.ForeignKey('Paramsconfigs', models.SET_NULL, db_column='model_trainedConfigID', blank=True, null=True)  # Field name made lowercase.
+    model_trainedcreatedtime = models.DateTimeField(db_column='model_trainedCreatedTime', blank=True, null=True)  # Field name made lowercase.
+    
+    class Meta:
+        managed = True
+        db_table="Model_trained"
