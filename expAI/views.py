@@ -854,7 +854,13 @@ class ModelsViewSet(viewsets.ModelViewSet):
             permission_classes = [IsTeacher]
 
         return [permission() for permission in permission_classes]
-
+    
+class Model_trainedViewSet(viewsets.ModelViewSet):
+    queryset = Model_trained.objects.all()
+    serializer_class = Model_trainedSerializer
+    permission_classes = [IsStudent | IsTeacher]
+    authentication_classes = (CsrfExemptSessionAuthentication,)
+    
         
 class ModelsUploadView(views.APIView):
     parser_classes = [FormParser,MultiPartParser]
